@@ -15,6 +15,10 @@ setwd('C://Users//mmann//Google Drive//Climate Change Perception//Mike County Da
 
 # steps  done in python Data Setup.py
 
+
+# Non_spatial regressions -------------------------------------------------
+
+
 for (yrs in c(30,40,50)){
     for (mis in c(5,10,15)){
         
@@ -123,46 +127,6 @@ for (yrs in c(30,40,50)){
         
         
         
-        # # write out states file
-        # states = read.dbf('tl_2010_us_state10//tl_2010_us_state10 - Copy.dbf',as.is=T )
-        # state_D_TmaxW$States=sprintf("%02d", state_D_TmaxW$States) # convert to 2 digit code
-        # state_D_TmaxW$GEOID10 = state_D_TmaxW$States
-        # states = join(states,state_D_TmaxW,type='left',by='GEOID10')
-        # # same for non weighted
-        # state_D_Tmax$States=sprintf("%02d", state_D_Tmax$States) # convert to 2 digit code
-        # state_D_Tmax$GEOID10 = state_D_Tmax$States
-        # states = join(states,state_D_Tmax,type='left',by='GEOID10')
-        # # same for SD
-        # state_D_Tmax_SD$States=sprintf("%02d", state_D_Tmax_SD$States) # convert to 2 digit code
-        # state_D_Tmax_SD$GEOID10 = state_D_Tmax_SD$States
-        # states = join(states,state_D_Tmax_SD,type='left',by='GEOID10')
-        
-        # #add in CC belief
-        # belief = read.csv("States.csv", as.is=T)
-        # belief[belief$Belief==-99999,c('Station','Belief','Republican')]=NA
-        # names(belief)[1] = "STUSPS10"
-        # states = join(states,belief,type='left',by='STUSPS10')
-        # # shorten names for .dbf
-        # names(states)[grep('state_',names(states))]= sub('state_','',names(states)[grep('state_',names(states))])
-        # 
-        # write.dbf(states,'tl_2010_us_state10//tl_2010_us_state10.dbf')
-        # 
-        # write.csv(states,paste('Final Outputs//States_Weighted_D_Tmax_',Filter,'.csv',sep=''))
-        
-        # 
-        # # compare state weighted and raw state average
-        # raw = read.dbf('Stations_equidistant.dbf')
-        # raw = raw[raw$R_End >= 2014,]
-        # raw = raw[(raw$R_End - raw$R_Start + 1) >  as.numeric( substr(Filter,1,2)) ,]
-        # raw = raw[(raw$R_End - raw$R_Start + 1)-raw$R_Min >  as.numeric( substr(Filter,4,5)) ,]
-        # a = aggregate(D_Tmax~State,data=raw,FUN=mean)
-        # b = aggregate(cbind(state_D_TmaxW,state_D_Tmax)~STUSPS10,data=states,FUN=mean)
-        # names(b) = c("State","state_D_TmaxW","state_D_Tmax") 
-        # c = join(a,b)# state_CCI and CCI don't need to match
-        # c = cbind(c, c$state_D_TmaxW-c$state_D_Tmax)
-        # c
-        
-        
         # regressions
         
         reg1 = lm(happen_P~county_D_TmaxW  ,data=data_regression)
@@ -228,7 +192,7 @@ stargazer(reg9,
 # write.csv(out,'Final Outputs//resid.csv')           
 
 
-# Neighbor Regression -----------------------------------------------------
+# Spatial Regressions -----------------------------------------------------
 # test wether or not people are affected by out of state temps
 library(rgdal)
 library(spdep)
@@ -261,6 +225,16 @@ for (yrs in c(30,40,50)){
         climate$Countycode=factor(sprintf("%05d", climate$Countycode)) # make county code 5 digits and factor to match
         counties.p@data= join(counties.p@data, climate, type="left")
         
+        county_D_TmaxW_Recent= read.csv(paste('Regression Intermediates//county_D_TmaxW_Recent_',Filter,'.csv',sep=''))
+        county_D_Tmax_Recent = read.csv(paste('Regression Intermediates//county_D_Tmax_Recent_',Filter,'.csv',sep=''))
+        county_D_TminW_Recent= read.csv(paste('Regression Intermediates//county_D_TminW_Recent_',Filter,'.csv',sep=''))
+        county_D_Tmin_Recent = read.csv(paste('Regression Intermediates//county_D_Tmin_Recent_',Filter,'.csv',sep=''))
+
+        counties.p@data= join(counties.p@data, county_D_TmaxW_Recent, type="left",by='Countycode')
+        counties.p@data= join(counties.p@data, county_D_Tmax_Recent, type="left",by='Countycode')
+        counties.p@data= join(counties.p@data, county_D_TminW_Recent, type="left",by='Countycode')
+        counties.p@data= join(counties.p@data, county_D_Tmin_Recent, type="left",by='Countycode')
+        
         # Remove all counties with no climate change data
         counties.p = counties.p[!(as.character(counties.p@data$Statecode) %in% c('PR')),]
         counties.C_nb = poly2nb(counties.p,row.names = row.names(counties.p)) # polygon continuity$GEOID10
@@ -275,20 +249,20 @@ for (yrs in c(30,40,50)){
           })
         attributes(out) = attributes(counties.C_nb) # convert to a nb class
         attr(out,"names")<-attr(out,"region.id")  # add a names attribute so you can call by ID
-        out['8860']                               # check to see if still empty
+        #out['8860']                               # check to see if still empty
         attributes(out) = attributes(counties.C_nb) # convert to a nb class
         
         # create weights matrix row standardized
         Wneigh = nb2mat(out, style='W')
-        Wneigh 
+        #Wneigh 
         
         mean_neighbors <- function(values,sweights){
         # function calculates the mean value of neighbors values by using sweights
-        out=list()
+        out2=list()
           for(row in 1:length(values)){
-            out=c(out,sum(values*sweights[row,]))
+            out2=c(out2,sum(values*sweights[row,]))
           }
-        return(as.numeric(out))
+        return(as.numeric(out2))
         }
       
         # People are effected by neighbor values WEIGHTED
@@ -330,18 +304,15 @@ for (yrs in c(30,40,50)){
         # test for spatial autocorrelation of error terms
         reg1 = lm(happen_P~county_D_TmaxW  , data=counties.p)
         summary(reg1)
-        plot(reg1$fitted.values, reg1$model[,1],labels=reg1$model)
+        #plot(reg1$fitted.values, reg1$model[,1],labels=reg1$model)
         moran1mix    = lm.morantest(reg1,Wmix,alternative="two.sided")
         moran2kneigh = lm.morantest(reg1,WKneigh,alternative="two.sided")
         #  reject null of random distribution   
     
         # add post 2008 data 
-        recent = read.csv('..//International//after2005.csv')
-        names(recent)[1]="StationID"
-        counties.p@data = join(counties.p@data,recent,type='left')
-        reg9= lm(happen_P~county_D_TmaxW+I(TMAXNEW *(county_D_Tmax<=163))+ I((TMAXNEW) *(county_D_Tmax>163 & county_D_Tmax<=182))+I((TMINNEW) *(county_D_Tmax>182 & county_D_Tmax<=201))+I(TMINNEW *(county_D_Tmax>201))  ,data=counties.p)
+        reg9= lm(happen_P~county_D_TmaxW+I(county_D_TmaxW_Recent *(county_D_Tmax<=163))+ I((county_D_TmaxW_Recent) *(county_D_Tmax>163 & county_D_Tmax<=182))+I((county_D_TminW_Recent) *(county_D_Tmax>182 & county_D_Tmax<=201))+I(county_D_TminW_Recent *(county_D_Tmax>201))   ,data=counties.p)
         summary(reg9) 
-        moran9mix    = lm.morantest(reg9,Wmix,alternative="two.sided")
+       # moran9mix    = lm.morantest(reg9,Wmix,alternative="two.sided")
         moran9kneigh = lm.morantest(reg9,WKneigh,alternative="two.sided")
             
     # write to files
@@ -355,7 +326,10 @@ for (yrs in c(30,40,50)){
                      paste('P.Value: ',moran2kneigh$p.value), paste('estimate: ' ,moran2kneigh$estimate[1]) ), fileConn)
         close(fileConn)
     
-
+        fileConn<-file(paste('Regression Output//MoransI-Kneigh_Reg9',Filter,"-output.txt",sep=""))
+        writeLines(c(paste(Filter,moran9kneigh$method,moran9kneigh$alternative, sep=' - '),paste('Statistic: ',moran9kneigh$statistic),
+                     paste('P.Value: ',moran9kneigh$p.value), paste('estimate: ' ,moran9kneigh$estimate[1]) ), fileConn)
+        close(fileConn)
     # Lagrange Multiplier Test for spatial lag vs error -------------------------------
     # https://geodacenter.asu.edu/drupal_files/spdepintro.pdf
     
@@ -370,9 +344,6 @@ for (yrs in c(30,40,50)){
     close(fileConn)
     
     # Spatial error regression    ---------------------------------------------
-        
-
-    
     
         COL.errW.eig1 <- errorsarlm(happen_P~county_D_Tmax  , data=counties.p,
                                    WKneigh, method="MC", quiet=FALSE)  # MC also works
@@ -397,6 +368,28 @@ for (yrs in c(30,40,50)){
                   model.numbers=T, 
                   type = "text", out = paste("Regression Output//Spatial_reg_results",Filter,".txt"))
      
+        
+          
+        
+        COL.errW.eig9 <- errorsarlm(happen_P~county_D_TmaxW+I(county_D_TmaxW_Recent *(county_D_Tmax<=163))+ I((county_D_TmaxW_Recent) *(county_D_Tmax>163 & county_D_Tmax<=182))+I((county_D_TminW_Recent) *(county_D_Tmax>182 & county_D_Tmax<=201))+I(county_D_TminW_Recent *(county_D_Tmax>201))  , data=counties.p,
+                                    WKneigh, method="MC", quiet=FALSE)  # MC also works
+    
+        summary(COL.errW.eig9)
+        
+        
+        stargazer(COL.errW.eig9,  
+                  title=paste("Regression Results: Min Years =",substr(Filter,1,2),'Max Missing = ',substr(Filter,4,5)), 
+                  align=TRUE, 
+                  dep.var.labels=c("% Believe Happening"), 
+                  covariate.labels=c("TmaxW","TmaxW_Recent, TmaxW<=163","TmaxW_Recent, 163<TmaxW<=182","TminW_Recent, 182<TmaxW<=201","TminW_Recent, TmaxW>201"),  
+                  no.space=TRUE, 
+                  omit.stat=c("LL","ser","f", "rsq"),
+                  column.labels=c(sub('_','-',Filter),sub('_','-',Filter),sub('_','-',Filter)), 
+                  dep.var.caption="", 
+                  model.numbers=T, 
+                  type = "text", out = paste("Regression Output//Spatial_reg_results_recent",Filter,".txt")
+        )
+            
     }
 }
 
