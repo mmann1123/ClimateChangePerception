@@ -463,7 +463,7 @@ for (yrs in c(30,40,50)){
         )
         
         
-        regElections = lagsarlm(logit(Per_Romney)~county_D_TmaxW  ,data=counties.p, WKneigh, method="MC", quiet=F)
+        regElections = lagsarlm(logit(Per_Obama)~county_D_TmaxW  ,data=counties.p, WKneigh, method="MC", quiet=F)
         summary(regElections)
         
         stargazer(regElections,  
@@ -476,7 +476,7 @@ for (yrs in c(30,40,50)){
                   column.labels=c(sub('_','-',Filter),sub('_','-',Filter),sub('_','-',Filter)), 
                   dep.var.caption="", 
                   model.numbers=T, 
-                  type = "text", out = paste("Regression Output//reg_results_election_spatial_romney",Filter,".txt")
+                  type = "text", out = paste("Regression Output//reg_results_election_spatial",Filter,".txt")
         )
         
             
