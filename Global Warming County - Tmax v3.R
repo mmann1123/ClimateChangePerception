@@ -479,6 +479,25 @@ for (yrs in c(30,40,50)){
                   type = "text", out = paste("Regression Output//reg_results_election_spatial",Filter,".txt")
         )
         
+        
+        regElections2 = lagsarlm(logit(Per_Obama)~county_D_TmaxW+I(county_D_TmaxW_Recent *(county_D_Tmax<=163))+ I((county_D_TmaxW_Recent) *(county_D_Tmax>163 & county_D_Tmax<=182))+I((county_D_TminW_Recent) *(county_D_Tmax>182 & county_D_Tmax<=201))+I(county_D_TminW_Recent *(county_D_Tmax>201))   ,data=counties.p, WKneigh, method="MC", quiet=F)
+        summary(regElections2)
+        
+        stargazer(regElections2,  
+                  title=paste("Spatial Regression Results Election: Min Years =",substr(Filter,1,2),'Max Missing = ',substr(Filter,4,5)), 
+                  align=TRUE, 
+                  dep.var.labels=c("% Vote 4 Obama - logit transform"), 
+                  covariate.labels=c("TmaxW"),  
+                  no.space=TRUE, 
+                  omit.stat=c("LL","ser","f", "rsq"),
+                  column.labels=c(sub('_','-',Filter),sub('_','-',Filter),sub('_','-',Filter)), 
+                  dep.var.caption="", 
+                  model.numbers=T, 
+                  type = "text", out = paste("Regression Output//reg_results_election_spatial_recent",Filter,".txt")
+        )
+        
+        
+        
             
     }
 }
