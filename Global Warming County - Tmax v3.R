@@ -4,12 +4,19 @@
 #install.packages('stargazer')
 #install.packages('RANN')
 #install.packages('rgeos')
+rm(list=ls())
 
 library(plyr)
 library(foreign)
 library(stargazer)
 library(RANN)
 library(rgeos)
+library(spdep)
+library(car)
+library(rgdal)
+library(spdep)
+#library(bigmemory)
+
 
 setwd('C://Users//mmann//Google Drive//Climate Change Perception//Mike County Data Files//')
 
@@ -34,8 +41,20 @@ for (yrs in c(30,40,50)){
         names(recent)[1]="StationID"
         data = join(data,recent,type='left')
         
+        # add election results data
+        election = read.csv('..//Mike County Data Files//CountyElections//2012 Presidential County Results.csv',stringsAsFactors = F)
+        election$Countycode = sprintf("%05d", as.numeric(election$Countycode))
+        election$Per_Obama = as.numeric(election$PCT_OBM) # avoid 
+        election$Per_Romney = as.numeric(election$PCT_ROM)
+        election = election[election$Countycode!="00000",]
+        head(election)
+        length(unique(election$Countycode))
+        data = join(data,election,type='left',by='Countycode')
+       
+    
         databackup = data
         #data = databackup 
+        
         #convert to from m^2 to km^2
         data$F_AREAKM =  data$F_AREA / 1000000
          
@@ -122,9 +141,8 @@ for (yrs in c(30,40,50)){
         
         
         # Limit regression to unique Counties 
-        data_regression = data[,c('Lat','Lon','States','Countycode','Countyname','county_D_TmaxW','county_D_Tmax','county_D_TmaxW_Recent','county_D_Tmax_Recent','county_D_TminW_Recent','county_D_Tmin_Recent','county_D_Tmax_SD','happen_Pop','happen_P','happenOpp_','hapOp_P','human_Pop','human_P','humanOp_Po','humanOp_P')]
+        data_regression = data[,c('Lat','Lon','States','Countycode','Countyname','county_D_TmaxW','county_D_Tmax','county_D_TmaxW_Recent','county_D_Tmax_Recent','county_D_TminW_Recent','county_D_Tmin_Recent','county_D_Tmax_SD','happen_Pop','happen_P','happenOpp_','hapOp_P','human_Pop','human_P','humanOp_Po','humanOp_P','Per_Obama')]
         data_regression = unique(data_regression)
-        
         
         
         # regressions
@@ -139,6 +157,8 @@ for (yrs in c(30,40,50)){
         
         reg3= lm(happen_P~county_D_TmaxW+county_D_Tmax ,data=data_regression)
         summary(reg3)
+        
+
         
 #         reg4 = lm(happen_P~county_D_Tmax+county_D_Tmax_SD ,data=data_regression)
 #         summary(reg4)
@@ -166,6 +186,42 @@ stargazer(reg9,
           )
 
 
+    regElections = lm(logit(Per_Obama)~county_D_TmaxW  ,data=data_regression)
+    summary(regElections)
+    
+    stargazer(regElections,  
+              title=paste("Regression Results Election: Min Years =",substr(Filter,1,2),'Max Missing = ',substr(Filter,4,5)), 
+              align=TRUE, 
+              dep.var.labels=c("% Vote 4 Obama"), 
+              covariate.labels=c("TmaxW"),  
+              no.space=TRUE, 
+              omit.stat=c("LL","ser","f", "rsq"),
+              column.labels=c(sub('_','-',Filter),sub('_','-',Filter),sub('_','-',Filter)), 
+              dep.var.caption="", 
+              model.numbers=T, 
+              type = "text", out = paste("Regression Output//reg_results_election",Filter,".txt")
+    )
+    
+
+    reg10_elec= lm(logit(Per_Obama)~county_D_TmaxW ,data=data_regression)
+
+
+    # check robustness, logit transform http://stats.stackexchange.com/questions/48485/what-is-the-difference-between-logit-transformed-linear-regression-logistic-reg
+    reg10= lm(logit(happen_P)~county_D_TmaxW+I(county_D_TmaxW_Recent *(county_D_Tmax<=163))+ I((county_D_TmaxW_Recent) *(county_D_Tmax>163 & county_D_Tmax<=182))+I((county_D_TminW_Recent) *(county_D_Tmax>182 & county_D_Tmax<=201))+I(county_D_TminW_Recent *(county_D_Tmax>201))  ,data=data_regression)
+    summary(reg10)        
+    
+    stargazer(reg10,  
+              title=paste("Regression Logit Transform Results: Min Years =",substr(Filter,1,2),'Max Missing = ',substr(Filter,4,5)), 
+              align=TRUE, 
+              dep.var.labels=c("% Believe Happening"), 
+              covariate.labels=c("TmaxW","TmaxW_Recent, TmaxW<=163","TmaxW_Recent, 163<TmaxW<=182","TminW_Recent, 182<TmaxW<=201","TminW_Recent, TmaxW>201"),  
+              no.space=TRUE, 
+              omit.stat=c("LL","ser","f", "rsq"),
+              column.labels=c(sub('_','-',Filter),sub('_','-',Filter),sub('_','-',Filter)), 
+              dep.var.caption="", 
+              model.numbers=T, 
+              type = "text", out = paste("Regression Output//reg_results_recent_logit_trans",Filter,".txt")
+    )
 
         stargazer(reg1, reg2,reg3,
                    title=paste("Regression Results: Min Years =",substr(Filter,1,2),'Max Missing = ',substr(Filter,4,5)), 
@@ -194,13 +250,7 @@ stargazer(reg9,
 
 # Spatial Regressions -----------------------------------------------------
 # test wether or not people are affected by out of state temps
-library(rgdal)
-library(spdep)
-library(rgeos)
-library(RANN)
-library(plyr)
-library(stargazer)
-#library(bigmemory)
+
   
 setwd('C://Users//mmann//Google Drive//Climate Change Perception//Mike County Data Files//')
 
@@ -234,6 +284,17 @@ for (yrs in c(30,40,50)){
         counties.p@data= join(counties.p@data, county_D_Tmax_Recent, type="left",by='Countycode')
         counties.p@data= join(counties.p@data, county_D_TminW_Recent, type="left",by='Countycode')
         counties.p@data= join(counties.p@data, county_D_Tmin_Recent, type="left",by='Countycode')
+        
+        # add election results data
+        election = read.csv('..//Mike County Data Files//CountyElections//2012 Presidential County Results.csv',stringsAsFactors = F)
+        election$Countycode = sprintf("%05d", as.numeric(election$Countycode))
+        election$Per_Obama = as.numeric(election$PCT_OBM) # avoid 
+        election$Per_Romney = as.numeric(election$PCT_ROM)
+        election = election[election$Countycode!="00000",]
+        head(election)
+        length(unique(election$Countycode))
+        counties.p@data = join(counties.p@data,election,type='left',by='Countycode')
+        
         
         # Remove all counties with no climate change data
         counties.p = counties.p[!(as.character(counties.p@data$Statecode) %in% c('PR')),]
@@ -330,6 +391,7 @@ for (yrs in c(30,40,50)){
         writeLines(c(paste(Filter,moran9kneigh$method,moran9kneigh$alternative, sep=' - '),paste('Statistic: ',moran9kneigh$statistic),
                      paste('P.Value: ',moran9kneigh$p.value), paste('estimate: ' ,moran9kneigh$estimate[1]) ), fileConn)
         close(fileConn)
+    
     # Lagrange Multiplier Test for spatial lag vs error -------------------------------
     # https://geodacenter.asu.edu/drupal_files/spdepintro.pdf
     
@@ -369,10 +431,20 @@ for (yrs in c(30,40,50)){
                   type = "text", out = paste("Regression Output//Spatial_reg_results",Filter,".txt"))
      
         
+        
+        lagrange9 = lm.LMtests( lm(happen_P~county_D_TmaxW+I(county_D_TmaxW_Recent *(county_D_Tmax<=163))+ I((county_D_TmaxW_Recent) *(county_D_Tmax>163 & county_D_Tmax<=182))+I((county_D_TminW_Recent) *(county_D_Tmax>182 & county_D_Tmax<=201))+I(county_D_TminW_Recent *(county_D_Tmax>201)) ,data = counties.p),WKneigh, test=c("LMerr","RLMerr","LMlag","RLMlag"))
+        print(lagrange9) # null => alpha = 0  in alphaWe  or null => beta = 0  in betaWy
+        
+        fileConn<-file(paste('Regression Output//Lagrange-Kneigh-Recent',Filter,"-output.txt",sep=""))
+        writeLines(c(paste(Filter, sep=' - '),paste('LMerr: ',lagrange9$LMerr)
+                     ,paste('RLMerr: ',lagrange9$RLMerr)
+                     ,paste('LMlag: ',lagrange9$LMlag)
+                     ,paste('RLMlag: ',lagrange9$RLMlag)), fileConn)
+        close(fileConn)
           
         
-        COL.errW.eig9 <- errorsarlm(happen_P~county_D_TmaxW+I(county_D_TmaxW_Recent *(county_D_Tmax<=163))+ I((county_D_TmaxW_Recent) *(county_D_Tmax>163 & county_D_Tmax<=182))+I((county_D_TminW_Recent) *(county_D_Tmax>182 & county_D_Tmax<=201))+I(county_D_TminW_Recent *(county_D_Tmax>201))  , data=counties.p,
-                                    WKneigh, method="MC", quiet=FALSE)  # MC also works
+        COL.errW.eig9 <- lagsarlm(happen_P~county_D_TmaxW+I(county_D_TmaxW_Recent *(county_D_Tmax<=163))+ I((county_D_TmaxW_Recent) *(county_D_Tmax>163 & county_D_Tmax<=182))+I((county_D_TminW_Recent) *(county_D_Tmax>182 & county_D_Tmax<=201))+I(county_D_TminW_Recent *(county_D_Tmax>201))  , data=counties.p,
+                                    WKneigh, method="MC", quiet=F)  # MC also works
     
         summary(COL.errW.eig9)
         
@@ -389,12 +461,33 @@ for (yrs in c(30,40,50)){
                   model.numbers=T, 
                   type = "text", out = paste("Regression Output//Spatial_reg_results_recent",Filter,".txt")
         )
+        
+        
+        regElections = lagsarlm(logit(Per_Romney)~county_D_TmaxW  ,data=counties.p, WKneigh, method="MC", quiet=F)
+        summary(regElections)
+        
+        stargazer(regElections,  
+                  title=paste("Spatial Regression Results Election: Min Years =",substr(Filter,1,2),'Max Missing = ',substr(Filter,4,5)), 
+                  align=TRUE, 
+                  dep.var.labels=c("% Vote 4 Obama - logit transform"), 
+                  covariate.labels=c("TmaxW"),  
+                  no.space=TRUE, 
+                  omit.stat=c("LL","ser","f", "rsq"),
+                  column.labels=c(sub('_','-',Filter),sub('_','-',Filter),sub('_','-',Filter)), 
+                  dep.var.caption="", 
+                  model.numbers=T, 
+                  type = "text", out = paste("Regression Output//reg_results_election_spatial_romney",Filter,".txt")
+        )
+        
             
     }
 }
 
 
  
+
+
+
 
 # Spatial Sampling Distance Decay Plots--------------------------------------------------------
     library(ncf)  # http://www.r-bloggers.com/spatial-correlograms-in-r-a-mini-overview/
@@ -434,6 +527,9 @@ for (yrs in c(30,40,50)){
     ggplot(plotdata,aes(x=Distance,y=Value,colour=Index))+stat_smooth()+coord_cartesian(xlim=c(0,2e6))+ylab('Moran\'s I Value')+xlab('Distance (m)')
 
 
+    
+    
+    
 
 
 # Spatial Sampling Distance Decay Plots RESIDUAL --------------------------------------------------------
@@ -533,39 +629,60 @@ data_sm = stations_sm %over% stations
     min(unlist(dnlist2),na.rm=T)
 
 
+    
+    # attempt again
+    dnlist2 = dnlist
+    # select row 1 as first point
+    selected  = 1 
+     
+    all = 1:length(potentials)
+    potentials = as.list(rep(NA,length(dnlist)))
+    potentials[[selected]]=T
+    selected=all[unlist(potentials)]   
+    # NA all neighbors in dnlist[[1]], set potential to F
+    # Find next potential 
+    dnlist2 = lapply(1:length(dnlist),function(x) if(sum(dnlist2[[x]] %in% selected)>0){
+        return(NA)}else{
+            return(dnlist2[[x]])} )
+    # NA out  dnlist[[selected]]
+    dnlist2[[max(selected,na.rm=T)]] = NA
+    
+    
+    library(spdep)
+    coordinates(station) = c("Lon", "Lat")
+    proj4string(station) = CRS("+proj=longlat +datum=WGS84")  ## for example
+    station = spTransform(station, CRS("+proj=eqdc +lat_0=39 +lon_0=-96 +lat_1=33 +lat_2=45 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs "))
+    head(station)
+    set.seed(11)
+    station_sm=station[sample(dim(station)[1], 2000),]
+    dnlist_sm = dnearneigh(coordinates(station_sm),0,6e5,row.names= station_sm$ID)
+    dnlist_sm = lapply(1:length(dnlist_sm),function(x) if(sum(dnlist_sm[[x]] %in% unique(unlist(dnlist_sm)))>0){
+        return(NULL)}else{
+            return(dnlist_sm[[x]])} )
+    
 
-# attempt again
-dnlist2 = dnlist
-# select row 1 as first point
-selected  = 1 
- 
-all = 1:length(potentials)
-potentials = as.list(rep(NA,length(dnlist)))
-potentials[[selected]]=T
-selected=all[unlist(potentials)]   
-# NA all neighbors in dnlist[[1]], set potential to F
-# Find next potential 
-dnlist2 = lapply(1:length(dnlist),function(x) if(sum(dnlist2[[x]] %in% selected)>0){
-    return(NA)}else{
-        return(dnlist2[[x]])} )
-# NA out  dnlist[[selected]]
-dnlist2[[max(selected,na.rm=T)]] = NA
-
-
-library(spdep)
-coordinates(station) = c("Lon", "Lat")
-proj4string(station) = CRS("+proj=longlat +datum=WGS84")  ## for example
-station = spTransform(station, CRS("+proj=eqdc +lat_0=39 +lon_0=-96 +lat_1=33 +lat_2=45 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs "))
-head(station)
-set.seed(11)
-station_sm=station[sample(dim(station)[1], 2000),]
-dnlist_sm = dnearneigh(coordinates(station_sm),0,6e5,row.names= station_sm$ID)
-dnlist_sm = lapply(1:length(dnlist_sm),function(x) if(sum(dnlist_sm[[x]] %in% unique(unlist(dnlist_sm)))>0){
-    return(NULL)}else{
-        return(dnlist_sm[[x]])} )
-
-
-
+# Count # of stations in each filtered group ------------------------------
+library(foreign)
+    
+    setwd('C:\\Users\\mmann\\Google Drive\\Climate Change Perception\\Mike County Data Files\\Output\\')
+    list.files('.','Census_S')
+    
+    count_list = list()
+    yrs_list=list()
+    mis_list=list()
+    for (yrs in c(30,40,50)){
+        for (mis in c(5,10,15)){
+           file= read.dbf(paste('Census_Station_',yrs,'_',mis,'.dbf',sep=''))
+           count_list =  c(count_list,length(unique(file$StationID)))
+           yrs_list   = c(yrs_list,yrs)
+           mis_list   = c(mis_list,mis)
+        }
+    }        
+    data.frame(MinYrs= unlist(yrs_list),MaxMis = unlist(mis_list),StationNum = unlist(count_list))
+    
+    
+    
+                
 #  These functions use bigmemory package to create large spatial weights matrix works with R\R-2.15.3   
 #   my_nb2mat = function (neighbours, glist = NULL, style = "W", zero.policy = NULL) 
 #   {
