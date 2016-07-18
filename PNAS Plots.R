@@ -14,7 +14,7 @@ library(spdep)
 library(car)
 library(rgdal)
 #library(bigmemory)
-
+ library(ggplot2)
 
 setwd('C://Users//mmann//Google Drive//Climate Change Perception//Mike County Data Files//')
 
@@ -104,6 +104,13 @@ for (yrs in c(30,40,50)){
         
         # People are not effected by neighbor values UNWEIGHTED
         counties.p$D_Tmax_neigh = mean_neighbors(values=counties.p$county_D_Tmax ,sweights=Wneigh)
+        counties.p$D_TmaxW_neigh = mean_neighbors(values=counties.p$county_D_TmaxW ,sweights=Wneigh)
+        
+        
+        counties.p.out = counties.p[,c('GEOID10','happen_P','county_D_TmaxW')]
+        writeOGR(counties.p.out, dsn = './PolygonsForGeoda', layer = paste('counties.p2','_',yrs,'_',mis,sep=''), driver = "ESRI Shapefile",overwrite=T)
+        
+        
         #         regN2 = lm(happen_P~D_Tmax_neigh    ,data=counties.p)
         #         regN2a = lm(happen_P~D_Tmax_neigh + county_D_Tmax  ,data=counties.p)
         #         summary(regN2)
@@ -131,11 +138,22 @@ for (yrs in c(30,40,50)){
         WKneigh = nb2listw(counties.K_nb)
         Wmix = nb2listw(out)
         
+        # Regressions requested by reviewers --------------------------------------
         
         summary(lm(happen_P~county_D_Tmax,data = counties.p))
         
         ggplot(data=counties.p@data,aes(y=happen_P,x=county_D_Tmax))+geom_point(alpha=.25)+geom_smooth(method=lm)
         
+        
+        COL.errW.null.tmax <- lagsarlm(county_D_TmaxW~1     , data=counties.p,
+                                  WKneigh, method="MC", quiet=F)  # MC also works
+        
+        summary(COL.errW.null.tmax,Nagelkerke=T)
+        
+        COL.errW.null.tmax.nb <- lagsarlm(happen_P~ county_D_TmaxW+D_TmaxW_neigh    , data=counties.p,
+                                       WKneigh, method="MC", quiet=F)  # MC also works
+        
+        summary(COL.errW.null.tmax.nb,Nagelkerke=T)
         
         
         COL.errW.eig9 <- lagsarlm(happen_P~county_D_TmaxW+I(county_D_TmaxW_Recent *(county_D_Tmax<=163))+ I((county_D_TmaxW_Recent) *(county_D_Tmax>163 & county_D_Tmax<=182))+I((county_D_TminW_Recent) *(county_D_Tmax>182 & county_D_Tmax<=201))+I(county_D_TminW_Recent *(county_D_Tmax>201))  , data=counties.p,
@@ -145,16 +163,40 @@ for (yrs in c(30,40,50)){
         
         # get fitted vs actual
         dat = data.frame(Fitted.Values=COL.errW.eig9$fitted.values,Actual.Values=COL.errW.eig9$y)
-        dat2 = na.omit(counties.p@data[,c('county_D_TminW_Recent','Statename'),drop=F]) # this gets the same # obs as the regression
+        dat2 = na.omit(counties.p@data[,c('county_D_TminW_Recent','Statename','State'),drop=F]) # this gets the same # obs as the regression
         dat = cbind(dat,dat2)
+        BEA_Regions =data.frame(State = c('AK','WA','OR','CA','NV','HI',
+                                             'MT','ID','WY','UT','CO',
+                                             'AZ','NM','OK','TX',
+                                             'ND','SD','NE','KS','MO','IA','MN',
+                                             'WI','IL','MI','IN','OH',
+                                             'AR','LA','KY','TN','MS','AL','WV','VA','NC','SC','GA','FL',
+                                             'MD','DC','DE','NJ','PA','NY',
+                                             'ME','NH','VT','MA','RI','CT'),
         
-        ggplot(data=dat,aes(y=Fitted.Values,x=Actual.Values,colour=Statename))+geom_point()+geom_abline(slope=1,intercept = 0)+ 
-            coord_fixed()+coord_cartesian(xlim =c(44,85), ylim =c(48,85))
+            BEA=c('Far West','Far West','Far West','Far West','Far West','Far West',
+                  'Rocky Mountain','Rocky Mountain','Rocky Mountain','Rocky Mountain','Rocky Mountain',
+                  'Southwest','Southwest','Southwest','Southwest',
+                  'Plains','Plains','Plains','Plains','Plains','Plains','Plains',
+                  'Great Lakes','Great Lakes','Great Lakes','Great Lakes','Great Lakes',
+                  'Southeast','Southeast','Southeast','Southeast','Southeast','Southeast','Southeast','Southeast','Southeast','Southeast','Southeast','Southeast',
+                  'Mideast','Mideast','Mideast','Mideast','Mideast','Mideast',
+                  'New England','New England','New England','New England','New England','New England'))
+            
+        dat = join(dat,BEA_Regions)
+        
+        
+        ggplot(data=dat,aes(y=Fitted.Values,x=Actual.Values,colour=BEA))+geom_point( )+
+            geom_abline(slope=1,intercept = 0,size=1.25,colour='grey40',linetype = "longdash")+
+            scale_colour_discrete(name  ="Region")+xlab('Actual Values')+ylab('Fitted Values')
+             #+coord_cartesian(xlim =c(44,85), ylim =c(48,85))
                 
     
         
     }
 }
+
+
 
 
 
