@@ -1,0 +1,512 @@
+?raster
+dat = data.frame(x=c(6,4,5,7,2,3,3,3,7,5),y=c(7,6,2,6,4,5,1,3,5,9))
+dij = sqrt((dat$x-4.5)^2+(dat$y-5)^2)
+dij
+i=1
+set.seed(i)
+Y= runif(1000, -3, 3)
+set.seed(i+100)
+X=runif(1000, -3, 3)
+dat = data.frame(Y=Y, X=X)
+lm(Y~X,data=dat)
+summary(lm(Y~X,data=dat))
+names(summary(lm(Y~X,data=dat)))
+names(summary(lm(Y~X,data=dat))$coefficients)
+(summary(lm(Y~X,data=dat))$coefficients)
+str(summary(lm(Y~X,data=dat))$coefficients)
+str(summary(lm(Y~X,data=dat))$coefficients[,c('t value')])
+(summary(lm(Y~X,data=dat))$coefficients[,c('t value')])
+(summary(lm(Y~X,data=dat))$coefficients[,c('t value')][2])
+store_ttest = NA
+store_ttest = rep(NA,1000)
+ttest=summary(lm(Y~X,data=dat))$coefficients[,c('t value')][2]
+store_ttest[i]=ttest
+store_ttest
+store_ttest = rep(NA,1000)
+for(i in 1:1000){
+# create 2 random sets of data
+set.seed(i)
+Y= runif(1000, -3, 3)
+set.seed(i+100)
+X=runif(1000, -3, 3)
+dat = data.frame(Y=Y, X=X)
+# run regression
+ttest=summary(lm(Y~X,data=dat))$coefficients[,c('t value')][2]
+store_ttest[i]=ttest
+}
+sort(store_ttest,decreasing = T)
+sort(t(store_ttest),decreasing = T)
+dim(store_ttest)
+length(store_ttest)
+store_ttest = data.frame(ttest=rep(NA,1000))
+store_ttest = data.frame(ttest=rep(NA,1000))
+for(i in 1:1000){
+# create 2 random sets of data
+set.seed(i)
+Y= runif(1000, -3, 3)
+set.seed(i+100)
+X=runif(1000, -3, 3)
+dat = data.frame(Y=Y, X=X)
+# run regression
+ttest=summary(lm(Y~X,data=dat))$coefficients[,c('t value')][2]
+store_ttest$ttest[i]=ttest
+}
+sort(store_ttest$ttest,decreasing = T)
+store_ttest = data.frame(ttest=rep(NA,1000))
+for(i in 1:1000){
+# create 2 random sets of data
+set.seed(i)
+Y= runif(1000, -1, 1)
+set.seed(i+100)
+X=runif(1000, -1, 1)
+dat = data.frame(Y=Y, X=X)
+# run regression
+ttest=summary(lm(Y~X,data=dat))$coefficients[,c('t value')][2]
+store_ttest$ttest[i]=ttest
+}
+sort(store_ttest$ttest,decreasing = T)
+rm(list=ls())
+setwd('X:\\Google Drive\\India Night Lights\\Data\\World Bank Enterprise Survey\\StandardizedNew-2006_2014--core4-')
+library(ggmap)
+library(raster)
+data = read.csv('New_Comprehensive_Sep_09_2015_locations.csv')
+locations = data.frame(loc=paste(toupper(data$a3x), ',','India',sep=''),stringsAsFactors = F)
+# remove repeated state values
+locations =apply(locations,1,function(x){
+d <- unlist(strsplit(x, split=" "))
+paste(unique(d), collapse = ' ')
+})
+# make some changes to avoid geocoding errors
+locations[locations=="HYDERABAD ANDHRA PRADESH,India"]="HYDERABAD,India"
+# add location query to original data
+data$locations=locations
+# find unique locations
+locations= unique(locations)
+head(locations,200)
+# check number of available queries
+geocodeQueryCheck(userType = "free")
+# store results
+holder = data.frame(locations=locations)
+holder$lat=NA
+holder$lng=NA
+holder$matchedAddress = ""
+holder$boundryType = ""
+for (i in 1:length(locale)){
+#if(is.na(locale[[i]])==T){break}
+if(locale[[i]]$status=="ZERO_RESULTS"){next}
+holder$lat[i]=locale[[i]]$results[[1]]$geometry$location$lat
+holder$lng[i]=locale[[i]]$results[[1]]$geometry$location$lng
+holder$matchedAddress[i] = paste(locale[[i]]$results[[1]]$formatted_address,locale[[i]]$results[[1]]$address_components[[1]]$short_name,"district",collapse=' ')
+holder$boundryType[i]=paste(locale[[i]]$results[[1]]$types,collapse = ' ') # boundary type
+}
+setwd('X:\\Google Drive\\India Night Lights\\Data\\World Bank Enterprise Survey\\StandardizedNew-2006_2014--core4-')
+data = read.csv('New_Comprehensive_Sep_09_2015_locations.csv')
+data = read.csv('Encrypted\New_Comprehensive_Sep_09_2015_locations.csv')
+data = read.csv('Encrypted\\New_Comprehensive_Sep_09_2015_locations.csv')
+locations = data.frame(loc=paste(toupper(data$a3x), ',','India',sep=''),stringsAsFactors = F)
+# remove repeated state values
+locations =apply(locations,1,function(x){
+d <- unlist(strsplit(x, split=" "))
+paste(unique(d), collapse = ' ')
+})
+# make some changes to avoid geocoding errors
+locations[locations=="HYDERABAD ANDHRA PRADESH,India"]="HYDERABAD,India"
+# add location query to original data
+data$locations=locations
+# find unique locations
+locations= unique(locations)
+head(locations,200)
+install.packages("ff")
+library(ff)
+# store results
+holder = data.frame(locations=locations)
+holder$lat=NA
+holder$lng=NA
+holder$matchedAddress = ""
+holder$boundryType = ""
+for (i in 1:length(locale)){
+#if(is.na(locale[[i]])==T){break}
+if(locale[[i]]$status=="ZERO_RESULTS"){next}
+holder$lat[i]=locale[[i]]$results[[1]]$geometry$location$lat
+holder$lng[i]=locale[[i]]$results[[1]]$geometry$location$lng
+holder$matchedAddress[i] = paste(locale[[i]]$results[[1]]$formatted_address,locale[[i]]$results[[1]]$address_components[[1]]$short_name,"district",collapse=' ')
+holder$boundryType[i]=paste(locale[[i]]$results[[1]]$types,collapse = ' ') # boundary type
+}
+# add geocoded data
+data_xy = join(data,holder )
+library(plyr)
+data_xy = join(data,holder )
+write.csv.ffdf(data_xy, 'Encrypted\\New_Comprehensive_Sep_09_2015__GEOCODED.csv')
+write.csv.ffdf(as.ffdf(data_xy), 'Encrypted\\New_Comprehensive_Sep_09_2015__GEOCODED.csv')
+data_xy = as.ffdf(join(data,holder ))
+?as.ffdf
+data_xy = as.ffdf(join(data,holder ),vmode='character')
+.vimplemented
+?data.frame
+data_xy = as.ffdf(as.data.frame(join(data,holder ),stringsAsFactors=T) )
+data_xy = join(data,holder )
+data_xy = as.ffdf(as.data.frame(data_xy,stringsAsFactors=T) )
+?write.csv
+data_xy = join(data,holder )
+data_xy = as.matrix(data_xy )
+View(data_xy)
+write.csv(data_xy, 'Encrypted\\New_Comprehensive_Sep_09_2015__GEOCODED.csv')
+data_xy = as.data.frame(data_xy, stringsAsFactors=F) # speed up writing out data
+data_xy = as.matrix(data_xy ) # speed up writing out data
+coordinates(holder)= ~lng+lat
+proj4string(holder) <- CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")
+head(holder)
+# store results
+holder = data.frame(locations=locations)
+holder$lat=NA
+holder$lng=NA
+holder$matchedAddress = ""
+holder$boundryType = ""
+for (i in 1:length(locale)){
+#if(is.na(locale[[i]])==T){break}
+if(locale[[i]]$status=="ZERO_RESULTS"){next}
+holder$lat[i]=locale[[i]]$results[[1]]$geometry$location$lat
+holder$lng[i]=locale[[i]]$results[[1]]$geometry$location$lng
+holder$matchedAddress[i] = paste(locale[[i]]$results[[1]]$formatted_address,locale[[i]]$results[[1]]$address_components[[1]]$short_name,"district",collapse=' ')
+holder$boundryType[i]=paste(locale[[i]]$results[[1]]$types,collapse = ' ') # boundary type
+}
+load('.//GeocodeResults.RData')
+# store results
+holder = data.frame(locations=locations)
+holder$lat=NA
+holder$lng=NA
+holder$matchedAddress = ""
+holder$boundryType = ""
+for (i in 1:length(locale)){
+#if(is.na(locale[[i]])==T){break}
+if(locale[[i]]$status=="ZERO_RESULTS"){next}
+holder$lat[i]=locale[[i]]$results[[1]]$geometry$location$lat
+holder$lng[i]=locale[[i]]$results[[1]]$geometry$location$lng
+holder$matchedAddress[i] = paste(locale[[i]]$results[[1]]$formatted_address,locale[[i]]$results[[1]]$address_components[[1]]$short_name,"district",collapse=' ')
+holder$boundryType[i]=paste(locale[[i]]$results[[1]]$types,collapse = ' ') # boundary type
+}
+holder = data.frame(locations=locations)
+holder$lat=NA
+holder$lng=NA
+holder$matchedAddress = ""
+holder$boundryType = ""
+for (i in 1:length(locale)){
+#if(is.na(locale[[i]])==T){break}
+if(locale[[i]]$status=="ZERO_RESULTS"){next}
+holder$lat[i]=locale[[i]]$results[[1]]$geometry$location$lat
+holder$lng[i]=locale[[i]]$results[[1]]$geometry$location$lng
+holder$matchedAddress[i] = paste(locale[[i]]$results[[1]]$formatted_address,locale[[i]]$results[[1]]$address_components[[1]]$short_name,"district",collapse=' ')
+holder$boundryType[i]=paste(locale[[i]]$results[[1]]$types,collapse = ' ') # boundary type
+}
+i
+if(locale[[i]]$status=="ZERO_RESULTS"){next}
+holder$lat[i]=locale[[i]]$results[[1]]$geometry$location$lat
+locale[[i]]$results[[1]]$geometry$location$lat
+holder$lat[i]
+length(locations)
+rm(list=ls())
+setwd('X:\\Google Drive\\India Night Lights\\Data\\World Bank Enterprise Survey\\StandardizedNew-2006_2014--core4-')
+library(ggmap)
+library(raster)
+library(ff)
+library(plyr)
+data = read.csv('Encrypted\\New_Comprehensive_Sep_09_2015_locations.csv')
+locations = data.frame(loc=paste(toupper(data$a3x), ',','India',sep=''),stringsAsFactors = F)
+# remove repeated state values
+locations =apply(locations,1,function(x){
+d <- unlist(strsplit(x, split=" "))
+paste(unique(d), collapse = ' ')
+})
+# make some changes to avoid geocoding errors
+locations[locations=="HYDERABAD ANDHRA PRADESH,India"]="HYDERABAD,India"
+# add location query to original data
+data$locations=locations
+# find unique locations
+locations= unique(locations)
+head(locations,200)
+# check number of available queries
+geocodeQueryCheck(userType = "free")
+# run geocoder
+locale = geocode(locations,output='all')
+save(locale,file='.//GeocodeResults.RData')
+# store results
+holder = data.frame(locations=locations)
+holder$lat=NA
+holder$lng=NA
+holder$matchedAddress = ""
+holder$boundryType = ""
+for (i in 1:length(locale)){
+#if(is.na(locale[[i]])==T){break}
+if(locale[[i]]$status=="ZERO_RESULTS"){next}
+holder$lat[i]=locale[[i]]$results[[1]]$geometry$location$lat
+holder$lng[i]=locale[[i]]$results[[1]]$geometry$location$lng
+holder$matchedAddress[i] = paste(locale[[i]]$results[[1]]$formatted_address,locale[[i]]$results[[1]]$address_components[[1]]$short_name,"district",collapse=' ')
+holder$boundryType[i]=paste(locale[[i]]$results[[1]]$types,collapse = ' ') # boundary type
+}
+# add geocoded data
+data_xy = join(data,holder )
+data_xy = as.matrix(data_xy ) # speed up writing out data
+write.csv(data_xy, 'Encrypted\\New_Comprehensive_Sep_09_2015__GEOCODED.csv')
+coordinates(holder)= ~lng+lat
+head(holder)
+holder
+holder = na.omit(holder)
+coordinates(holder)= ~lng+lat
+proj4string(holder) <- CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")
+dnb = raster('..//Outputs//percent_outage.tif')
+dnb = raster('..//..//Outputs//percent_outage.tif')
+dnb_values_holder = extract(dnb,holder, df=T)
+dnb_values_holder2 = extract(dnb,holder, df=T,buffer=1000, fun=median)
+# store output with original data
+holder$percent_outage = dnb_values_holder$percent_outage
+holder$percent_outage_buffer1km = dnb_values_holder2$percent_outage
+holder = holder[,c('locations','percent_outage','percent_outage_buffer1km')]
+data_xy = join(data,holder )
+class(holder)
+class(holder@data)
+data_xy = join(data,holder@data )
+data_xy = as.matrix(data_xy ) # speed up writing out data
+write.csv(holder, 'New_Comprehensive_Sep_09_2015__Outage.csv')
+data$locations
+names(data_xy)
+head(data_xy)
+write.csv(data_xy, 'New_Comprehensive_Sep_09_2015__Outage.csv')
+holder
+holder@data
+load('.//GeocodeResults.RData')
+# store results
+holder = data.frame(locations=locations)
+holder$lat=NA
+holder$lng=NA
+holder$matchedAddress = ""
+holder$boundryType = ""
+for (i in 1:length(locale)){
+#if(is.na(locale[[i]])==T){break}
+if(locale[[i]]$status=="ZERO_RESULTS"){next}
+holder$lat[i]=locale[[i]]$results[[1]]$geometry$location$lat
+holder$lng[i]=locale[[i]]$results[[1]]$geometry$location$lng
+holder$matchedAddress[i] = paste(locale[[i]]$results[[1]]$formatted_address,locale[[i]]$results[[1]]$address_components[[1]]$short_name,"district",collapse=' ')
+holder$boundryType[i]=paste(locale[[i]]$results[[1]]$types,collapse = ' ') # boundary type
+}
+holder
+View(holder)
+holder = na.omit(holder)
+coordinates(holder)= ~lng+lat
+proj4string(holder) <- CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")
+# get dnb values for location and 1km buffer
+dnb = raster('..//..//Outputs//percent_outage.tif')
+dnb_values_holder = extract(dnb,holder, df=T)
+dnb_values_holder2 = extract(dnb,holder, df=T,buffer=1000, fun=median)
+holder$percent_outage = dnb_values_holder$percent_outage
+holder$percent_outage_buffer1km = dnb_values_holder2$percent_outage
+holder = holder@data[,c('locations','percent_outage','percent_outage_buffer1km')]
+View(holder)
+# store results
+holder = data.frame(locations=locations)
+holder$lat=NA
+holder$lng=NA
+holder$matchedAddress = ""
+holder$boundryType = ""
+for (i in 1:length(locale)){
+#if(is.na(locale[[i]])==T){break}
+if(locale[[i]]$status=="ZERO_RESULTS"){next}
+holder$lat[i]=locale[[i]]$results[[1]]$geometry$location$lat
+holder$lng[i]=locale[[i]]$results[[1]]$geometry$location$lng
+holder$matchedAddress[i] = paste(locale[[i]]$results[[1]]$formatted_address,locale[[i]]$results[[1]]$address_components[[1]]$short_name,"district",collapse=' ')
+holder$boundryType[i]=paste(locale[[i]]$results[[1]]$types,collapse = ' ') # boundary type
+}
+holder = na.omit(holder)
+coordinates(holder)= ~lng+lat
+proj4string(holder) <- CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")
+# get dnb values for location and 1km buffer
+dnb = raster('..//..//Outputs//percent_outage.tif')
+dnb_values_holder = extract(dnb,holder, df=T)
+dnb_values_holder2 = extract(dnb,holder, df=T,buffer=1000, fun=median)
+# store output with original data
+holder$percent_outage = dnb_values_holder$percent_outage
+holder$percent_outage_buffer1km = dnb_values_holder2$percent_outage
+head(holder@data)
+holder = holder@data[,c('locations','boundryType','percent_outage','percent_outage_buffer1km')]
+data_xy = join(data,holder)
+data_xy = join(data,holder )
+data_xy = as.matrix(data_xy ) # speed up writing out data
+load('.//GeocodeResults.RData')
+# store results
+holder = data.frame(locations=locations)
+holder$lat=NA
+holder$lng=NA
+holder$matchedAddress = ""
+holder$boundryType = ""
+for (i in 1:length(locale)){
+#if(is.na(locale[[i]])==T){break}
+if(locale[[i]]$status=="ZERO_RESULTS"){next}
+holder$lat[i]=locale[[i]]$results[[1]]$geometry$location$lat
+holder$lng[i]=locale[[i]]$results[[1]]$geometry$location$lng
+holder$matchedAddress[i] = paste(locale[[i]]$results[[1]]$formatted_address,locale[[i]]$results[[1]]$address_components[[1]]$short_name,"district",collapse=' ')
+holder$boundryType[i]=paste(locale[[i]]$results[[1]]$types,collapse = ' ') # boundary type
+}
+# add geocoded data
+data_xy = join(data,holder )
+data_xy = as.matrix(data_xy ) # speed up writing out data
+# set locations
+holder = na.omit(holder)
+coordinates(holder)= ~lng+lat
+proj4string(holder) <- CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")
+# get dnb values for location and 1km buffer
+dnb = raster('..//..//Outputs//percent_outage.tif')
+dnb_values_holder = extract(dnb,holder, df=T)
+dnb_values_holder2 = extract(dnb,holder, df=T,buffer=1000, fun=median)
+# store output with original data
+holder$percent_outage = dnb_values_holder$percent_outage
+holder$percent_outage_buffer1km = dnb_values_holder2$percent_outage
+#write to csv
+holder = holder@data[,c('locations','boundryType','percent_outage','percent_outage_buffer1km')]
+data_xy = join(data,holder)
+View(data_xy)
+head(data_xyy)
+head(data_xy)
+data_xy = join(data,holder)[,-c('locations')]
+data_xy = data_xy[,-which(names(df) %in% c("locations"))]
+data_xy = as.matrix(data_xy ) # speed up writing out data
+write.csv(data_xy, 'New_Comprehensive_Sep_09_2015__Outage.csv')
+write.csv(data_xy, 'New_Comprehensive_Sep_09_2015__Outage.csv')
+data_xy = join(data,holder )
+data_xy = as.matrix(data_xy ) # speed up writing out data
+data_xy = join(data,holder)
+data_xy = data_xy[,-which(names(df) %in% c("locations"))]
+rm(list=ls())
+setwd('X:\\Google Drive\\India Night Lights\\Data\\World Bank Enterprise Survey\\StandardizedNew-2006_2014--core4-')
+library(ggmap)
+library(raster)
+library(ff)
+library(plyr)
+data = read.csv('Encrypted\\New_Comprehensive_Sep_09_2015_locations.csv')
+locations = data.frame(loc=paste(toupper(data$a3x), ',','India',sep=''),stringsAsFactors = F)
+# remove repeated state values
+locations =apply(locations,1,function(x){
+d <- unlist(strsplit(x, split=" "))
+paste(unique(d), collapse = ' ')
+})
+# make some changes to avoid geocoding errors
+locations[locations=="HYDERABAD ANDHRA PRADESH,India"]="HYDERABAD,India"
+# add location query to original data
+data$locations=locations
+# find unique locations
+locations= unique(locations)
+head(locations,200)
+# check number of available queries
+geocodeQueryCheck(userType = "free")
+# run geocoder
+#locale = geocode(locations,output='all')
+#save(locale,file='.//GeocodeResults.RData')
+load('.//GeocodeResults.RData')
+# store results
+holder = data.frame(locations=locations)
+holder$lat=NA
+holder$lng=NA
+holder$matchedAddress = ""
+holder$boundryType = ""
+for (i in 1:length(locale)){
+#if(is.na(locale[[i]])==T){break}
+if(locale[[i]]$status=="ZERO_RESULTS"){next}
+holder$lat[i]=locale[[i]]$results[[1]]$geometry$location$lat
+holder$lng[i]=locale[[i]]$results[[1]]$geometry$location$lng
+holder$matchedAddress[i] = paste(locale[[i]]$results[[1]]$formatted_address,locale[[i]]$results[[1]]$address_components[[1]]$short_name,"district",collapse=' ')
+holder$boundryType[i]=paste(locale[[i]]$results[[1]]$types,collapse = ' ') # boundary type
+}
+# add geocoded data
+data_xy = join(data,holder )
+data_xy = as.matrix(data_xy ) # speed up writing out data
+# extract % outage rates  for all locations ------------------------------------
+# set locations
+holder = na.omit(holder)
+coordinates(holder)= ~lng+lat
+proj4string(holder) <- CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")
+# get dnb values for location and 1km buffer
+dnb = raster('..//..//Outputs//percent_outage.tif')
+dnb_values_holder = extract(dnb,holder, df=T)
+dnb_values_holder2 = extract(dnb,holder, df=T,buffer=1000, fun=median)
+# store output with original data
+holder$percent_outage = dnb_values_holder$percent_outage
+holder$percent_outage_buffer1km = dnb_values_holder2$percent_outage
+#write to csv
+holder = holder@data[,c('locations','boundryType','percent_outage','percent_outage_buffer1km')]
+data_xy = join(data,holder)
+data_xy = data_xy[,-which(names(df) %in% c("locations"))]
+data_xy = as.matrix(data_xy ) # speed up writing out data
+write.csv(data_xy, 'New_Comprehensive_Sep_09_2015__Outage.csv')
+data = read.csv('Encrypted\\New_Comprehensive_Sep_09_2015_locations.csv')
+locations = data.frame(loc=paste(toupper(data$a3x), ',','India',sep=''),stringsAsFactors = F)
+# remove repeated state values
+locations =apply(locations,1,function(x){
+d <- unlist(strsplit(x, split=" "))
+paste(unique(d), collapse = ' ')
+})
+# make some changes to avoid geocoding errors
+locations[locations=="HYDERABAD ANDHRA PRADESH,India"]="HYDERABAD,India"
+# add location query to original data
+data$locations=locations
+# find unique locations
+locations= unique(locations)
+head(locations,200)
+# check number of available queries
+geocodeQueryCheck(userType = "free")
+# run geocoder
+#locale = geocode(locations,output='all')
+#save(locale,file='.//GeocodeResults.RData')
+load('.//GeocodeResults.RData')
+# store results
+holder = data.frame(locations=locations)
+holder$lat=NA
+holder$lng=NA
+holder$matchedAddress = ""
+holder$boundryType = ""
+for (i in 1:length(locale)){
+#if(is.na(locale[[i]])==T){break}
+if(locale[[i]]$status=="ZERO_RESULTS"){next}
+holder$lat[i]=locale[[i]]$results[[1]]$geometry$location$lat
+holder$lng[i]=locale[[i]]$results[[1]]$geometry$location$lng
+holder$matchedAddress[i] = paste(locale[[i]]$results[[1]]$formatted_address,locale[[i]]$results[[1]]$address_components[[1]]$short_name,"district",collapse=' ')
+holder$boundryType[i]=paste(locale[[i]]$results[[1]]$types,collapse = ' ') # boundary type
+}
+# add geocoded data
+data_xy = join(data,holder )
+data_xy = as.matrix(data_xy ) # speed up writing out data
+loc = na.omit(holder)
+coordinates(loc)= ~lng+lat
+proj4string(loc) <- CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")
+# get dnb values for location and 1km buffer
+dnb = raster('..//..//Outputs//percent_outage.tif')
+dnb_values_holder = extract(dnb,loc, df=T)
+dnb_values_holder2 = extract(dnb,loc, df=T,buffer=1000, fun=median)
+loc$percent_outage = dnb_values_holder$percent_outage
+loc$percent_outage_buffer1km = dnb_values_holder2$percent_outage
+loc = loc@data[,c('locations','boundryType','percent_outage','percent_outage_buffer1km')]
+data_xy = join(data,loc)
+data_xy = data_xy[,-which(names(data_xy) %in% c("locations"))] # remove locations
+data_xy = as.matrix(data_xy ) # speed up writing out data
+write.csv(data_xy, 'New_Comprehensive_Sep_09_2015__Outage.csv')
+# this script geocodes the town names from the indian census and returns
+# lat lng coded address and boundary type
+# BOUNDRY BOX IS ALSO POSSIBLE
+rm(list=ls())
+setwd('X:\\Google Drive\\India Night Lights\\Data\\World Bank Enterprise Survey\\StandardizedNew-2006_2014--core4-')
+library(ggmap)
+library(raster)
+library(ff)
+library(plyr)
+data = read.csv('Encrypted\\New_Comprehensive_Sep_09_2015_locations.csv')
+locations = data.frame(loc=paste(toupper(data$a3x), ',','India',sep=''),stringsAsFactors = F)
+# remove repeated state values
+locations =apply(locations,1,function(x){
+d <- unlist(strsplit(x, split=" "))
+paste(unique(d), collapse = ' ')
+})
+# make some changes to avoid geocoding errors
+locations[locations=="HYDERABAD ANDHRA PRADESH,India"]="HYDERABAD,India"
+# add location query to original data
+data$locations=locations
+# find unique locations
+locations= unique(locations)
+head(locations,200)
+locations

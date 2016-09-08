@@ -14,8 +14,7 @@ library(rgeos)
 library(spdep)
 library(car)
 library(rgdal)
-library(spdep)
-#library(bigmemory)
+ #library(bigmemory)
 
 
 setwd('C://Users//mmann//Google Drive//Climate Change Perception//Mike County Data Files//')
@@ -172,7 +171,7 @@ for (yrs in c(30,40,50)){
         reg9= lm(happen_P~county_D_TmaxW+I(county_D_TmaxW_Recent *(county_D_Tmax<=163))+ I((county_D_TmaxW_Recent) *(county_D_Tmax>163 & county_D_Tmax<=182))+I((county_D_TminW_Recent) *(county_D_Tmax>182 & county_D_Tmax<=201))+I(county_D_TminW_Recent *(county_D_Tmax>201))  ,data=data_regression)
         summary(reg9)        
         
-stargazer(reg9,  
+        stargazer(reg9,  
           title=paste("Regression Results: Min Years =",substr(Filter,1,2),'Max Missing = ',substr(Filter,4,5)), 
           align=TRUE, 
           dep.var.labels=c("% Believe Happening"), 
@@ -203,8 +202,21 @@ stargazer(reg9,
     )
     
 
-    reg10_elec= lm(logit(Per_Obama)~county_D_TmaxW ,data=data_regression)
-
+    regElectionsv2 = lm(happen_P~county_D_TmaxW+Per_Obama ,data=data_regression)
+    summary(regElectionsv2)
+    
+    stargazer(regElectionsv2,  
+              title=paste("Regression Results Election: Min Years =",substr(Filter,1,2),'Max Missing = ',substr(Filter,4,5)), 
+              align=TRUE, 
+              dep.var.labels=c("% Vote 4 Obama"), 
+              covariate.labels=c( ),  
+              no.space=TRUE, 
+              omit.stat=c("LL","ser","f", "rsq"),
+              column.labels=c(sub('_','-',Filter),sub('_','-',Filter),sub('_','-',Filter)), 
+              dep.var.caption="", 
+              model.numbers=T, 
+              type = "text", out = paste("Regression Output//reg_results_electionv2",Filter,".txt")
+    )
 
     # check robustness, logit transform http://stats.stackexchange.com/questions/48485/what-is-the-difference-between-logit-transformed-linear-regression-logistic-reg
     reg10= lm(logit(happen_P)~county_D_TmaxW+I(county_D_TmaxW_Recent *(county_D_Tmax<=163))+ I((county_D_TmaxW_Recent) *(county_D_Tmax>163 & county_D_Tmax<=182))+I((county_D_TminW_Recent) *(county_D_Tmax>182 & county_D_Tmax<=201))+I(county_D_TminW_Recent *(county_D_Tmax>201))  ,data=data_regression)
@@ -248,11 +260,9 @@ stargazer(reg9,
 # write.csv(out,'Final Outputs//resid.csv')           
 
 
+
 # Spatial Regressions -----------------------------------------------------
 # test wether or not people are affected by out of state temps
-
-  
-setwd('C://Users//mmann//Google Drive//Climate Change Perception//Mike County Data Files//')
 
 for (yrs in c(30,40,50)){
     for (mis in c(5,10,15)){
@@ -335,24 +345,24 @@ for (yrs in c(30,40,50)){
         
         # People are not effected by neighbor values UNWEIGHTED
         counties.p$D_Tmax_neigh = mean_neighbors(values=counties.p$county_D_Tmax ,sweights=Wneigh)
-        regN2 = lm(happen_P~D_Tmax_neigh    ,data=counties.p)
-        regN2a = lm(happen_P~D_Tmax_neigh + county_D_Tmax  ,data=counties.p)
-        summary(regN2)
-        summary(regN2a)
-        
-        stargazer(regN1, regN1a,regN2,regN2a,
-                  title=paste("Regression Results: Min Years =",substr(Filter,1,2),'Max Missing = ',substr(Filter,4,5)), 
-                  align=TRUE, 
-                  dep.var.labels=c("% Believe Happening"), 
-                  #covariate.labels=c("D_TmaxW_neigh","county_D_TmaxW","D_Tmax_neigh","county_D_Tmax"),  
-                  no.space=TRUE, 
-                  omit.stat=c("LL","ser","f", "rsq"),
-                  column.labels=c(sub('_','-',Filter),sub('_','-',Filter),sub('_','-',Filter),sub('_','-',Filter)), 
-                  dep.var.caption="", 
-                  model.numbers=T, 
-                  type = "text", out = paste("Regression Output//reg_neigh_results",Filter,".txt"))
-    
-    
+#         regN2 = lm(happen_P~D_Tmax_neigh    ,data=counties.p)
+#         regN2a = lm(happen_P~D_Tmax_neigh + county_D_Tmax  ,data=counties.p)
+#         summary(regN2)
+#         summary(regN2a)
+#         
+#         stargazer(regN1, regN1a,regN2,regN2a,
+#                   title=paste("Regression Results: Min Years =",substr(Filter,1,2),'Max Missing = ',substr(Filter,4,5)), 
+#                   align=TRUE, 
+#                   dep.var.labels=c("% Believe Happening"), 
+#                   #covariate.labels=c("D_TmaxW_neigh","county_D_TmaxW","D_Tmax_neigh","county_D_Tmax"),  
+#                   no.space=TRUE, 
+#                   omit.stat=c("LL","ser","f", "rsq"),
+#                   column.labels=c(sub('_','-',Filter),sub('_','-',Filter),sub('_','-',Filter),sub('_','-',Filter)), 
+#                   dep.var.caption="", 
+#                   model.numbers=T, 
+#                   type = "text", out = paste("Regression Output//reg_neigh_results",Filter,".txt"))
+#     
+#     
     # Moran's I    -----------------------------------------------------
         
         counties.C_nb = poly2nb(counties.p) # polygon continuity
@@ -375,7 +385,7 @@ for (yrs in c(30,40,50)){
         summary(reg9) 
        # moran9mix    = lm.morantest(reg9,Wmix,alternative="two.sided")
         moran9kneigh = lm.morantest(reg9,WKneigh,alternative="two.sided")
-            
+              
     # write to files
         fileConn<-file(paste('Regression Output//MoransI-Mixed Weights',Filter,"-output.txt",sep=""))
         writeLines(c(paste(Filter,moran1mix$method,moran1mix$alternative, sep=' - '),paste('Statistic: ',moran1mix$statistic),
@@ -406,30 +416,33 @@ for (yrs in c(30,40,50)){
     close(fileConn)
     
     # Spatial error regression    ---------------------------------------------
-    
-        COL.errW.eig1 <- errorsarlm(happen_P~county_D_Tmax  , data=counties.p,
-                                   WKneigh, method="MC", quiet=FALSE)  # MC also works
+#     
+#         COL.errW.eig1 <- errorsarlm(happen_P~county_D_TmaxW  , data=counties.p,
+#                                    WKneigh, method="MC", quiet=FALSE)  # MC also works
+#         
+#         summary(COL.errW.eig1, correlation=F)
+# #         
+#         COL.errW.eig2 <- errorsarlm(happen_P~county_D_TmaxW  , data=counties.p,
+#                                    WKneigh, method="MC", quiet=FALSE) #eigen
+#     
+#         summary(COL.errW.eig2, correlation=F)
+#         
+#         
+#         stargazer(COL.errW.eig1, COL.errW.eig2,
+#                   title=paste("Spatial Simultaneous Autoregressive Error Model Results: Min Years =",substr(Filter,1,2),'Max Missing = ',substr(Filter,4,5)), 
+#                   align=TRUE, 
+#                   dep.var.labels=c("% Believe Happening"), 
+#                   covariate.labels=c("Weighted Tmax","Unweighted Tmax"),  
+#                   no.space=TRUE, 
+#                   omit.stat=c("LL","ser","f", "rsq"),
+#                   column.labels=c(sub('_','-',Filter),sub('_','-',Filter),sub('_','-',Filter)), 
+#                   dep.var.caption="", 
+#                   model.numbers=T, 
+#                   type = "text", out = paste("Regression Output//Spatial_reg_results",Filter,".txt"))
+#      
+#         
         
-        summary(COL.errW.eig1, correlation=F)
-        
-        COL.errW.eig2 <- errorsarlm(happen_P~county_D_TmaxW  , data=counties.p,
-                                   WKneigh, method="MC", quiet=FALSE) #eigen
-    
-        summary(COL.errW.eig2, correlation=F)
-        
-        
-        stargazer(COL.errW.eig1, COL.errW.eig2,
-                  title=paste("Spatial Simultaneous Autoregressive Error Model Results: Min Years =",substr(Filter,1,2),'Max Missing = ',substr(Filter,4,5)), 
-                  align=TRUE, 
-                  dep.var.labels=c("% Believe Happening"), 
-                  covariate.labels=c("Weighted Tmax","Unweighted Tmax"),  
-                  no.space=TRUE, 
-                  omit.stat=c("LL","ser","f", "rsq"),
-                  column.labels=c(sub('_','-',Filter),sub('_','-',Filter),sub('_','-',Filter)), 
-                  dep.var.caption="", 
-                  model.numbers=T, 
-                  type = "text", out = paste("Regression Output//Spatial_reg_results",Filter,".txt"))
-     
+        # Test for use of spatial error or lag ------------------------------------
         
         
         lagrange9 = lm.LMtests( lm(happen_P~county_D_TmaxW+I(county_D_TmaxW_Recent *(county_D_Tmax<=163))+ I((county_D_TmaxW_Recent) *(county_D_Tmax>163 & county_D_Tmax<=182))+I((county_D_TminW_Recent) *(county_D_Tmax>182 & county_D_Tmax<=201))+I(county_D_TminW_Recent *(county_D_Tmax>201)) ,data = counties.p),WKneigh, test=c("LMerr","RLMerr","LMlag","RLMlag"))
@@ -441,16 +454,32 @@ for (yrs in c(30,40,50)){
                      ,paste('LMlag: ',lagrange9$LMlag)
                      ,paste('RLMlag: ',lagrange9$RLMlag)), fileConn)
         close(fileConn)
-          
+        
+        
+        
+        # Spatial Lag Regressions -------------------------------------------------
+        # use these    
         
         COL.errW.eig9 <- lagsarlm(happen_P~county_D_TmaxW+I(county_D_TmaxW_Recent *(county_D_Tmax<=163))+ I((county_D_TmaxW_Recent) *(county_D_Tmax>163 & county_D_Tmax<=182))+I((county_D_TminW_Recent) *(county_D_Tmax>182 & county_D_Tmax<=201))+I(county_D_TminW_Recent *(county_D_Tmax>201))  , data=counties.p,
                                     WKneigh, method="MC", quiet=F)  # MC also works
     
-        summary(COL.errW.eig9)
+        summary(COL.errW.eig9,Nagelkerke=T)
         
+        dats = na.omit(counties.p@data[,c('happen_P','county_D_TminW_Recent'),drop=F]) # this gets the same # obs as the regression
+        # create a constant that has as many NAs as county_D_TminW_Recent
+        counties.p@data$constants  = 1
+        counties.p@data$constants[is.na(counties.p@data$county_D_TminW_Recent)]=NA
+        COL.errW.eig9.null <- lagsarlm(happen_P~0+ constants , data=counties.p,
+                                  WKneigh, method="MC", quiet=F)  # MC also works
+        
+        
+        
+        fileConn<-file(paste('Regression Output//Spatial_reg_results_recent_summaryformat',Filter,"-output.txt",sep=""))
+        writeLines(  capture.output(summary(COL.errW.eig9)), fileConn)
+        close(fileConn)
         
         stargazer(COL.errW.eig9,  
-                  title=paste("Regression Results: Min Years =",substr(Filter,1,2),'Max Missing = ',substr(Filter,4,5)), 
+                  title=paste("Regression Results: Min Years =",substr(Filter,1,2),'Max Missing = ',substr(Filter,4,5),' NK R2=',summary(COL.errW.eig9,Nagelkerke=T)$NK), 
                   align=TRUE, 
                   dep.var.labels=c("% Believe Happening"), 
                   covariate.labels=c("TmaxW","TmaxW_Recent, TmaxW<=163","TmaxW_Recent, 163<TmaxW<=182","TminW_Recent, 182<TmaxW<=201","TminW_Recent, TmaxW>201"),  
@@ -460,47 +489,339 @@ for (yrs in c(30,40,50)){
                   dep.var.caption="", 
                   model.numbers=T, 
                   type = "text", out = paste("Regression Output//Spatial_reg_results_recent",Filter,".txt")
+                  
         )
         
         
-        regElections = lagsarlm(logit(Per_Obama)~county_D_TmaxW  ,data=counties.p, WKneigh, method="MC", quiet=F)
-        summary(regElections)
+        # test for normality of residuals http://www.ppsw.rug.nl/~boomsma/apstatdata/Regrdiag_R.pdf
+        shap = shapiro.test(residuals(COL.errW.eig9))
         
-        stargazer(regElections,  
-                  title=paste("Spatial Regression Results Election: Min Years =",substr(Filter,1,2),'Max Missing = ',substr(Filter,4,5)), 
-                  align=TRUE, 
-                  dep.var.labels=c("% Vote 4 Obama - logit transform"), 
-                  covariate.labels=c("TmaxW"),  
-                  no.space=TRUE, 
-                  omit.stat=c("LL","ser","f", "rsq"),
-                  column.labels=c(sub('_','-',Filter),sub('_','-',Filter),sub('_','-',Filter)), 
-                  dep.var.caption="", 
-                  model.numbers=T, 
-                  type = "text", out = paste("Regression Output//reg_results_election_spatial",Filter,".txt")
-        )
+        fileConn<-file(paste('Regression Output//Shapiro_COL.errW.eig9',Filter,"-output.txt",sep=""))
+        writeLines(c(paste(Filter,shap$method,moran1mix$alternative, sep=' - '),paste('Statistic: ',shap$statistic),
+                     paste('P.Value: ',shap$p.value)), fileConn)
+        close(fileConn)
         
         
-        regElections2 = lagsarlm(logit(Per_Obama)~county_D_TmaxW+I(county_D_TmaxW_Recent *(county_D_Tmax<=163))+ I((county_D_TmaxW_Recent) *(county_D_Tmax>163 & county_D_Tmax<=182))+I((county_D_TminW_Recent) *(county_D_Tmax>182 & county_D_Tmax<=201))+I(county_D_TminW_Recent *(county_D_Tmax>201))   ,data=counties.p, WKneigh, method="MC", quiet=F)
+        #############################################################################################################        
+        #############################################################################################################         
+        ################################## Felix Code starts here ####################################################         
+        
+        
+        ########################################
+        ########################## Calculating Impact Measures
+        ##################################
+        
+        W <- as(WKneigh, "CsparseMatrix")
+        trMatc <- trW(W, type="mult", m=40)
+        trMC <- trW(W, type="MC", m=40)
+        
+        imp <- impacts(COL.errW.eig9, tr=trMC)
+        impR <- impacts(COL.errW.eig9, tr=trMC, R=1000)
+        summary(impR, zstats=TRUE)
+        
+        ddirect <- density(impR$sres$direct[,"county_D_TmaxW"])
+        dindirect <- density(impR$sres$indirect[,"county_D_TmaxW"])
+        dtotal <- density(impR$sres$total[,"county_D_TmaxW"])
+        
+        plot(ddirect, xlim=c(-0.01, 0.07), col="red", main="Direct (red), Indirect (blue), & Total Effect (black) of TMax", lwd=1.5)
+        lines(dindirect, col="blue", lwd=1.5)
+        lines(dtotal, col="black", lwd=2)
+        
+        
+        
+        ##############################################
+        ################ Visualising the Impact measures 
+        ############################################  
+        
+        ########### 1) For TMAX only:
+        
+        
+        
+        #deviation from the mean:
+        
+        counties.p$county_D_TmaxW.zm <- mean(counties.p$county_D_TmaxW) - counties.p$county_D_TmaxW 
+        
+        direct.ac.tmax <- imp$direct[1]*counties.p$county_D_TmaxW.zm
+        indirect.ac.tmax <- imp$indirect[1]*counties.p$county_D_TmaxW.zm
+        total.ac.tmax <- imp$total[1]*counties.p$county_D_TmaxW.zm
+        
+        direct.ac.tmax.dens <-  density(direct.ac.tmax)
+        indirect.ac.tmax.dens <- density(indirect.ac.tmax)
+        total.ac.tmax.dens <- density(total.ac.tmax)    
+        
+        ###Histograms
+        par(mfrow=c(3,1))
+        hist(direct.ac.tmax, main="Direct TMax Effect", col="red", xlim=c(-4, 4), breaks=16, xlab=NULL)
+        hist(indirect.ac.tmax, main="Indirect TMax Effect", col="blue", xlim=c(-4, 4), breaks=16, xlab=NULL)
+        hist(total.ac.tmax, main="Total TMax Effect", col="grey", xlim=c(-4, 4), breaks=16, xlab="% Change in Belief")
+        
+        dev.copy(png,'TMax.png', width=600, height=600)
+        dev.off()  
+        
+        dev.copy2pdf(file = "TMax.pdf", width = 6, height = 6)
+        dev.off()  
+        
+        ######################################################################
+        ###################### 2) For the other variables in the regression
+        
+        ##### extracting the other variables so that the indicator function is taken into account:
+        
+        RecTmax_163 <- COL.errW.eig9$X[,"I(county_D_TmaxW_Recent * (county_D_Tmax <= 163))"]
+        RecTmax_163_182 <- COL.errW.eig9$X[,"I((county_D_TmaxW_Recent) * (county_D_Tmax > 163 & county_D_Tmax <= 182))"]
+        RecTmin_182_201 <- COL.errW.eig9$X[,"I((county_D_TminW_Recent) * (county_D_Tmax > 182 & county_D_Tmax <= 201))"]
+        RecTmin_201 <- COL.errW.eig9$X[,"I(county_D_TminW_Recent * (county_D_Tmax > 201))"]
+        Tmax_reg <- COL.errW.eig9$X[,"county_D_TmaxW"]
+        
+        ###overview of data
+        hist(RecTmax_163)
+        hist(RecTmax_163_182)
+        hist(RecTmin_182_201)
+        hist(RecTmin_201)
+        
+        
+        
+        
+        
+        ####  Old Measure to subtract sample mean, not currently used as we decided not to do deviation from the mean for threshold variables.
+        comp_Tmax163 <- mean(RecTmax_163[which(Tmax_reg<=163)])
+        comp_Tmax163_182 <- mean(RecTmax_163_182[which(Tmax_reg>163 & Tmax_reg<=182)])
+        comp_Tmin_182_201 <- mean(RecTmin_182_201[which(Tmax_reg>182 & Tmax_reg<=201)])
+        comp_Tmin_201 <- mean(RecTmin_201[which(Tmax_reg>201)])
+        
+        
+        
+        ####### 2.1) For Recency <= 163      
+        
+        # RecTmax_163.zm <-    comp_Tmax163 - RecTmax_163 #Old measure of moving to the sample mean    
+        RecTmax_163.zm <- RecTmax_163 ##New measure
+        
+        hist(RecTmax_163.zm)
+        RecTmax_163.zm[which(Tmax_reg > 163)] <- 0 #to adjust that it only affects a subset of the counties, however with the new measure this is automatic.
+        hist(RecTmax_163.zm)
+        
+        direct.ac.rec163 <- imp$direct[2]*RecTmax_163.zm 
+        indirect.ac.rec163 <- imp$indirect[2]*RecTmax_163.zm 
+        total.ac.rec163 <- imp$total[2]*RecTmax_163.zm 
+        
+        par(mfrow=c(3,1))
+        
+        # hist(RecTmax_163, main="Histogram of Indep. Var. Rec TMax, <= 163")
+        hist(direct.ac.rec163, main="Direct Rec TMax, <=163 Effect", col="red", xlim=c(-4, 4), breaks=16, xlab=NULL)
+        hist(indirect.ac.rec163, main="Indirect Rec TMax, <=163 Effect", col="blue", xlim=c(-4, 4), breaks=16, xlab=NULL)
+        hist(total.ac.rec163, main="Total Rec TMax, <=163 Effect", col="grey", xlim=c(-4, 4), breaks=16, xlab="% Change in Belief")
+        
+        dev.copy(png,'TMax_163.png', width=600, height=600)
+        dev.off()  
+        
+        dev.copy2pdf(file = "TMax_163.pdf", width = 6, height = 6)
+        
+        dev.off()  
+        
+        ####### 2.2) For Recency > 163 <= 182      
+        
+        # RecTmax_163_182.zm <- comp_Tmax163_182  - RecTmax_163_182 #old measure
+        RecTmax_163_182.zm <- RecTmax_163_182
+        
+        hist(RecTmax_163_182.zm)
+        RecTmax_163_182.zm[which(Tmax_reg <= 163 | Tmax_reg > 182)] <- 0
+        hist(RecTmax_163_182.zm)
+        
+        direct.ac.rec163_182 <- imp$direct[3]*RecTmax_163_182.zm
+        indirect.ac.rec163_182 <- imp$indirect[3]*RecTmax_163_182.zm
+        total.ac.rec163_182 <- imp$total[3]*RecTmax_163_182.zm
+        
+        par(mfrow=c(3,1))
+        
+        #hist(RecTmax_163_182, main="Histogram of Indep. Var. Rec TMax, > 163, <=182")
+        hist(direct.ac.rec163_182, main="Direct Rec TMax, > 163, <=182 Effect", col="red", xlim=c(-4, 4), breaks=16, xlab=NULL)
+        hist(indirect.ac.rec163_182, main="Indirect Rec TMax, > 163, <=182 Effect", col="blue", xlim=c(-4, 4), breaks=16, xlab=NULL)
+        hist(total.ac.rec163_182, main="Total Rec TMax, > 163, <=182 Effect", col="grey", xlim=c(-4, 4), breaks=16, xlab="% Change in Belief")
+        
+        dev.copy(png,'TMax_163_182.png', width=600, height=600)
+        dev.off()  
+        
+        dev.copy2pdf(file = "TMax_163_182.pdf", width = 6, height = 6)
+        
+        dev.off()  
+        
+        
+        ####### 2.3) For Recency > 182 <= 201      
+        
+        # RecTmin_182_201.zm <-  comp_Tmin_182_201 - RecTmin_182_201 #old measure
+        RecTmin_182_201.zm <-   RecTmin_182_201
+        RecTmin_182_201.zm[which(Tmax_reg <= 182 | Tmax_reg > 201)] <- 0
+        
+        hist(RecTmin_182_201.zm)
+        
+        
+        direct.ac.rec182_201 <- imp$direct[4]*RecTmin_182_201.zm
+        indirect.ac.rec182_201 <- imp$indirect[4]*RecTmin_182_201.zm
+        total.ac.rec182_201 <- imp$total[4]*RecTmin_182_201.zm
+        
+        par(mfrow=c(3,1))
+        
+        #  hist(RecTmin_182_201, main="Histogram of Indep. Var. Rec TMin, > 182, <=201")
+        hist(direct.ac.rec182_201, main="Direct Rec TMin, > 182 <=201 Effect", col="red", xlim=c(-4, 4), breaks=16, xlab=NULL)
+        hist(indirect.ac.rec182_201, main="Indirect Rec TMin, > 182 <=201 Effect", col="blue", xlim=c(-4, 4), breaks=16, xlab=NULL)
+        hist(total.ac.rec182_201, main="Total Rec TMin, > 182 <=201 Effect", col="grey", xlim=c(-4, 4), breaks=16, xlab="% Change in Belief")
+        
+        dev.copy(png,'TMin_182_201.png', width=600, height=600) 
+        dev.off()  
+        
+        dev.copy2pdf(file = "TMin_182_201.pdf", width = 6, height = 6)
+        
+        dev.off()  
+        
+        ####### 2.4) For Recency > 201     
+        
+        # RecTmin_201.zm <- comp_Tmin_201  - RecTmin_201 #old measure
+        RecTmin_201.zm <-  RecTmin_201
+        RecTmin_201.zm[which(Tmax_reg <= 201)] <- 0
+        
+        
+        hist(RecTmin_201.zm)
+        
+        direct.ac.rec201 <- imp$direct[5]*RecTmin_201.zm
+        indirect.ac.rec201 <- imp$indirect[5]*RecTmin_201.zm
+        total.ac.rec201 <- imp$total[5]*RecTmin_201.zm
+        
+        par(mfrow=c(3,1))
+        
+        # hist(RecTmin_201, main="Histogram of Indep. Var. Rec TMin, > 201")
+        hist(direct.ac.rec201, main="Direct Rec TMin, > 201 Effect", col="red", xlim=c(-4, 4), breaks=16, xlab=NULL)
+        hist(indirect.ac.rec201, main="Indirect Rec TMin, > 201 Effect", col="blue", xlim=c(-4, 4), breaks=16, xlab=NULL)
+        hist(total.ac.rec201, main="Total Rec TMin, > 201 Effect", col="grey", xlim=c(-4, 4), breaks=16, xlab="% Change in Belief")        
+        
+        dev.copy(png,'TMin_201.png', width=600, height=600)
+        dev.off()     
+        
+        dev.copy2pdf(file = "TMin_201.pdf", width = 6, height = 6)
+        
+        dev.off()  
+        
+        
+        #######################   
+        ###############################################
+        ######## 3) Overall measure for total impact if TMax moved to the mean and TMin for > 201 added.
+        #####################################################
+        
+        ##### the mean is:
+        
+        Tmax_mean <-  mean(counties.p$county_D_TmaxW)
+        Tmax_mean.zm <- Tmax_mean - counties.p$county_D_TmaxW 
+        
+        ### TMax effect (same as above)
+        
+        direct.ac.tmax.reg <- imp$direct[1]*Tmax_mean.zm 
+        indirect.ac.tmax.reg <- imp$indirect[1]*Tmax_mean.zm 
+        total.ac.tmax.reg <- imp$total[1]*Tmax_mean.zm 
+        
+        #### with every county at the mean of TMax, which is greater than 201, every county also gets the TMin (for Tmax > 201) effect:
+        
+        Tmin_mean <- mean(counties.p$county_D_TminW_Recent, na.rm=TRUE)
+        #Tmin_mean.zm <- Tmin_mean - counties.p$county_D_TminW_Recent #old measure
+        Tmin_mean.zm <- counties.p$county_D_TminW_Recent
+        
+        
+        direct.ac.rec201.reg <- imp$direct[5]*Tmin_mean.zm
+        indirect.ac.rec201.reg <- imp$indirect[5]*Tmin_mean.zm
+        total.ac.rec201.reg <- imp$total[5]*Tmin_mean.zm
+        
+        ###summing the TMax effects and the TMin effects:
+        
+        direct.total <- direct.ac.tmax.reg + direct.ac.rec201.reg
+        indirect.total <- indirect.ac.tmax.reg + indirect.ac.rec201.reg
+        total.total <-  total.ac.tmax.reg + total.ac.rec201.reg
+        
+        
+        par(mfrow=c(3,1))
+        
+        #  hist(RecTmin_201, main="Histogram of Indep. Var. Rec TMin, > 201")
+        hist(direct.total, main="Direct overall (TMax Tmin) Effect", col="red", xlim=c(-5.5, 5.5), breaks=16, xlab=NULL)
+        hist(indirect.total, main="Indirect overall (TMax Tmin) Effect", col="blue", xlim=c(-5.5, 5.5), breaks=16, xlab=NULL)
+        hist(total.total, main="Total overall (TMax Tmin) Effect", col="grey", xlim=c(-5.5, 5.5), breaks=16, xlab="% Change in Belief")  
+        
+        dev.copy(png,'Total_TmaxTMin_201.png', width=600, height=600)
+        dev.off()    
+        
+        dev.copy2pdf(file = "Total_TmaxTMin_201.pdf", width = 6, height = 6)
+        
+        dev.off()  
+        
+        #####################################################################################################       
+        ############################################################################   
+        ####################################################
+        
+        
+        #The null hypothesis is that the residuals have a normal distribution. The p-value of the test
+        #statistic is large in this example. It thus follows that the null hypothesis is not rejected.
+        #Faraway (2005) only recommends this test in conjunction with a Q-Q plot. For large samples
+        #the test may be too sensitive, and for small samples its power may be too small – the usual
+        #dilemma.            
+        
+#         regElections = lagsarlm(logit(Per_Obama)~county_D_TmaxW  ,data=counties.p, WKneigh, method="MC", quiet=F)
+#         summary(regElections)
+#         
+#         stargazer(regElections,  
+#                   title=paste("Spatial Regression Results Election: Min Years =",substr(Filter,1,2),'Max Missing = ',substr(Filter,4,5)), 
+#                   align=TRUE, 
+#                   dep.var.labels=c("% Vote 4 Obama - logit transform"), 
+#                   covariate.labels=c(""),  
+#                   no.space=TRUE, 
+#                   omit.stat=c("LL","ser","f", "rsq"),
+#                   column.labels=c(sub('_','-',Filter),sub('_','-',Filter),sub('_','-',Filter)), 
+#                   dep.var.caption="", 
+#                   model.numbers=T, 
+#                   type = "text", out = paste("Regression Output//reg_results_election_spatial",Filter,".txt")
+#         )
+        
+        
+        regElections2 = lagsarlm(happen_P~Per_Obama+county_D_TmaxW+I(county_D_TmaxW_Recent *(county_D_Tmax<=163))+ I((county_D_TmaxW_Recent) *(county_D_Tmax>163 & county_D_Tmax<=182))+I((county_D_TminW_Recent) *(county_D_Tmax>182 & county_D_Tmax<=201))+I(county_D_TminW_Recent *(county_D_Tmax>201))   ,data=counties.p, WKneigh, method="MC", quiet=F)
         summary(regElections2)
         
         stargazer(regElections2,  
                   title=paste("Spatial Regression Results Election: Min Years =",substr(Filter,1,2),'Max Missing = ',substr(Filter,4,5)), 
                   align=TRUE, 
-                  dep.var.labels=c("% Vote 4 Obama - logit transform"), 
-                  covariate.labels=c("TmaxW"),  
+                  dep.var.labels=c("% Believe Happening"), 
+                  covariate.labels=c('PerObama',"TmaxW","TmaxW_Recent, TmaxW<=163","TmaxW_Recent, 163<TmaxW<=182","TminW_Recent, 182<TmaxW<=201","TminW_Recent, TmaxW>201"),  
                   no.space=TRUE, 
                   omit.stat=c("LL","ser","f", "rsq"),
                   column.labels=c(sub('_','-',Filter),sub('_','-',Filter),sub('_','-',Filter)), 
                   dep.var.caption="", 
                   model.numbers=T, 
-                  type = "text", out = paste("Regression Output//reg_results_election_spatial_recent",Filter,".txt")
+                  type = "text", out = paste("Regression Output//reg_results_election_spatial_recentv3",Filter,".txt")
+        )
+        
+        regElectionsv4 = lagsarlm(happen_P~county_D_TmaxW+Per_Obama   ,data=counties.p, WKneigh, method="MC", quiet=F)
+        summary(regElectionsv4)
+        
+        stargazer(regElectionsv4,  
+                  title=paste("Regression Results Election: Min Years =",substr(Filter,1,2),'Max Missing = ',substr(Filter,4,5)), 
+                  align=TRUE, 
+                  dep.var.labels=c("% Believe Happening"), 
+                  covariate.labels=c( ),  
+                  no.space=TRUE, 
+                  omit.stat=c("LL","ser","f", "rsq"),
+                  column.labels=c(sub('_','-',Filter),sub('_','-',Filter),sub('_','-',Filter)), 
+                  dep.var.caption="", 
+                  model.numbers=T, 
+                  type = "text", out = paste("Regression Output//reg_results_election_spatialv4",Filter,".txt")
         )
         
         
-        
+            summary(counties.p@data$county_D_TmaxW_Recent)
+            summary(counties.p@data$county_D_TminW_Recent)
             
+        fileConn<-file(paste('Regression Output//TMaxTmin_stats',Filter,"-output.txt",sep=""))
+        writeLines(c('county_D_TmaxW_Recent',paste(attributes(summary(counties.p@data$county_D_TmaxW_Recent))$names,summary(counties.p@data$county_D_TmaxW_Recent), sep=' - '),
+                     '   ','county_D_TminW_Recent',paste(attributes(summary(counties.p@data$county_D_TminW_Recent))$names,summary(counties.p@data$county_D_TminW_Recent))), fileConn)
+        close(fileConn)
     }
 }
+
+
+
+
 
 
  

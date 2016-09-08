@@ -3,7 +3,7 @@
 # and compares it to the distribution of observed temperatures
 
 # it also contains miscelaneus graphs used in the revision for PNAS
-
+rm(list=ls)
 
 library(plyr)
 library(foreign)
@@ -23,8 +23,8 @@ setwd('C://Users//mmann//Google Drive//Climate Change Perception//Mike County Da
 
 # PNAS revision plots -----------------------------------------------------
 
-for (yrs in c(30,40,50)){
-    for (mis in c(5,10,15)){
+    yrs =40 #30,40,50
+    mis = 10 #5,10,15
         
         # calculated weighted mean 
         # calculate total area of states
@@ -45,9 +45,13 @@ for (yrs in c(30,40,50)){
         counties.p@data= join(counties.p@data, climate, type="left")
         
         county_D_TmaxW_Recent= read.csv(paste('Regression Intermediates//county_D_TmaxW_Recent_',Filter,'.csv',sep=''))
+        county_D_TmaxW_Recent$Countycode = sprintf("%05d", county_D_TmaxW_Recent$Countycode)   # correct problem with leading zero missing
         county_D_Tmax_Recent = read.csv(paste('Regression Intermediates//county_D_Tmax_Recent_',Filter,'.csv',sep=''))
+        county_D_Tmax_Recent$Countycode = sprintf("%05d", county_D_Tmax_Recent$Countycode)
         county_D_TminW_Recent= read.csv(paste('Regression Intermediates//county_D_TminW_Recent_',Filter,'.csv',sep=''))
+        county_D_TminW_Recent$Countycode = sprintf("%05d", county_D_TminW_Recent$Countycode)
         county_D_Tmin_Recent = read.csv(paste('Regression Intermediates//county_D_Tmin_Recent_',Filter,'.csv',sep=''))
+        county_D_Tmin_Recent$Countycode = sprintf("%05d", county_D_Tmin_Recent$Countycode)
         
         counties.p@data= join(counties.p@data, county_D_TmaxW_Recent, type="left",by='Countycode')
         counties.p@data= join(counties.p@data, county_D_Tmax_Recent, type="left",by='Countycode')
@@ -106,8 +110,45 @@ for (yrs in c(30,40,50)){
         counties.p$D_Tmax_neigh = mean_neighbors(values=counties.p$county_D_Tmax ,sweights=Wneigh)
         counties.p$D_TmaxW_neigh = mean_neighbors(values=counties.p$county_D_TmaxW ,sweights=Wneigh)
         
+        # Moran's I    -----------------------------------------------------
         
-        counties.p.out = counties.p[,c('GEOID10','happen_P','county_D_TmaxW')]
+        counties.C_nb = poly2nb(counties.p) # polygon continuity
+        centroids = gCentroid(counties.p,byid=TRUE,id = row.names(counties.p))
+        counties.K_nb = knn2nb(knearneigh(centroids, k =5) ) # k nearest neighbors 
+        
+        WKneigh = nb2listw(counties.K_nb)
+        Wmix = nb2listw(out)
+        
+        
+        # Roberts suggestion compare difference between actual %belief and country mean belief, to predicted belief - mean belief
+        # Roberts suggestion compare difference between actual %belief and country mean belief, to predicted belief - mean belief
+        country_belief_mn = mean(counties.p$happen_P,na.rm=T)
+        counties.p$happen_P_diff = counties.p$happen_P - country_belief_mn
+        
+        COL.errW.eig9 <- lagsarlm(happen_P~county_D_TmaxW+I(county_D_TmaxW_Recent *(county_D_Tmax<=163))+ I((county_D_TmaxW_Recent) *(county_D_Tmax>163 & county_D_Tmax<=182))+I((county_D_TminW_Recent) *(county_D_Tmax>182 & county_D_Tmax<=201))+I(county_D_TminW_Recent *(county_D_Tmax>201))  , data=counties.p,
+                                  WKneigh, method="MC", quiet=F)  # MC also works
+        
+        # estimate recency effect Bi*variable for all recency variables
+        variable_names = names(COL.errW.eig9$coefficients[3:length(COL.errW.eig9$coefficients)])
+        Xs = as.data.frame(COL.errW.eig9$X)
+        Coefs =  COL.errW.eig9$coefficients
+        Rec_eff = Coefs[names(Coefs) %in% variable_names[1] ]*Xs[names(Xs) %in% variable_names[1] ]+
+          Coefs[names(Coefs) %in% variable_names[2] ]*Xs[names(Xs) %in% variable_names[2] ]+
+          Coefs[names(Coefs) %in% variable_names[3] ]*Xs[names(Xs) %in% variable_names[3] ]+
+          Coefs[names(Coefs) %in% variable_names[4] ]*Xs[names(Xs) %in% variable_names[4] ] 
+           
+          
+        dat = data.frame(Fitted.Values=COL.errW.eig9$fitted.values,Actual.Values=COL.errW.eig9$y,Rec_eff=Rec_eff)
+        names(dat) = c('Fitted.Values','Actual.Values','Rec_eff')
+        dat$Fitted.Values_diff = dat$Fitted.Values - country_belief_mn
+        dat2 = (counties.p@data[,c('GEOID10','county_D_TminW_Recent','county_D_Tmax','county_D_TmaxW_Recent','Statename','State'),drop=F])  # not need to drop nas as initially true
+        dat2 = dat2[,c('GEOID10','Statename','State')]
+        dat = cbind(dat,dat2)
+        counties.p@data = join(counties.p@data,dat)
+         
+        counties.p.out = counties.p[,c('GEOID10','happen_P','county_D_TmaxW','happen_P_diff','Fitted.Values_diff','Rec_eff')]
+        names(counties.p.out)=c(c('GEOID10','hap_P','TmaxW','hap_diff','FVal_diff','Rec_eff'))
+    
         writeOGR(counties.p.out, dsn = './PolygonsForGeoda', layer = paste('counties.p2','_',yrs,'_',mis,sep=''), driver = "ESRI Shapefile",overwrite=T)
         
         
@@ -129,14 +170,8 @@ for (yrs in c(30,40,50)){
         #                   type = "text", out = paste("Regression Output//reg_neigh_results",Filter,".txt"))
         #     
         #     
-        # Moran's I    -----------------------------------------------------
+       
         
-        counties.C_nb = poly2nb(counties.p) # polygon continuity
-        centroids = gCentroid(counties.p,byid=TRUE,id = row.names(counties.p))
-        counties.K_nb = knn2nb(knearneigh(centroids, k =5) ) # k nearest neighbors 
-        
-        WKneigh = nb2listw(counties.K_nb)
-        Wmix = nb2listw(out)
         
         # Regressions requested by reviewers --------------------------------------
         
@@ -163,7 +198,7 @@ for (yrs in c(30,40,50)){
         
         # get fitted vs actual
         dat = data.frame(Fitted.Values=COL.errW.eig9$fitted.values,Actual.Values=COL.errW.eig9$y)
-        dat2 = na.omit(counties.p@data[,c('county_D_TminW_Recent','Statename','State'),drop=F]) # this gets the same # obs as the regression
+        dat2 = (counties.p@data[,c('county_D_TmaxW','county_D_TminW_Recent','Statename','State'),drop=F]) # this gets the same # obs as the regression
         dat = cbind(dat,dat2)
         BEA_Regions =data.frame(State = c('AK','WA','OR','CA','NV','HI',
                                              'MT','ID','WY','UT','CO',
@@ -185,16 +220,19 @@ for (yrs in c(30,40,50)){
             
         dat = join(dat,BEA_Regions)
         
-        
-        ggplot(data=dat,aes(y=Fitted.Values,x=Actual.Values,colour=BEA))+geom_point( )+
+        windows()
+        ggplot(data=dat,aes(y=Fitted.Values,x=Actual.Values,colour=BEA))+geom_point(aes(alpha=0.3) )+
             geom_abline(slope=1,intercept = 0,size=1.25,colour='grey40',linetype = "longdash")+
             scale_colour_discrete(name  ="Region")+xlab('Actual Values')+ylab('Fitted Values')
              #+coord_cartesian(xlim =c(44,85), ylim =c(48,85))
-                
-    
         
-    }
-}
+        windows()
+        ggplot() +
+          geom_density(data=na.omit(dat), aes(x=county_D_TmaxW, fill=BEA), alpha=.6, position="identity")+
+          ylab('Density')+xlab('TMax')+
+          theme(axis.text=element_text(size=13),axis.title=element_text(size=14 ))
+    
+
 
 
 
